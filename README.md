@@ -38,14 +38,14 @@ This project demonstrates the integration of the **Microsoft Agent Framework** w
 
 ```powershell
 $env:AZURE_OPENAI_ENDPOINT = "https://your-resource.openai.azure.com/"
-$env:AZURE_OPENAI_DEPLOYMENT_NAME = "gpt-4"
+$env:AZURE_OPENAI_DEPLOYMENT_NAME = "gpt-5-mini"
 ```
 
 ### Option 3: Permanent environment variables
 
 ```powershell
 [System.Environment]::SetEnvironmentVariable('AZURE_OPENAI_ENDPOINT', 'https://your-resource.openai.azure.com/', 'User')
-[System.Environment]::SetEnvironmentVariable('AZURE_OPENAI_DEPLOYMENT_NAME', 'gpt-4', 'User')
+[System.Environment]::SetEnvironmentVariable('AZURE_OPENAI_DEPLOYMENT_NAME', 'gpt-5-mini', 'User')
 ```
 
 ## 🏃 Run
