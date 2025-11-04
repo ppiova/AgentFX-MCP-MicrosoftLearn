@@ -1,0 +1,11 @@
+{
+  "profiles": {
+    "AgentFrameworkWithLearnMcp": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "AZURE_OPENAI_ENDPOINT": "https://aif-agentfx.openai.azure.com/",
+        "AZURE_OPENAI_DEPLOYMENT_NAME": "gpt-5-mini"
+      }
+    }
+  }
+}
