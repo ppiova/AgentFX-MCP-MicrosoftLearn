@@ -8,13 +8,14 @@ Two .NET console applications demonstrating the integration of **Microsoft Agent
 Simple demo with a single question execution. Perfect for learning the basics.
 
 ### 2. AgentFrameworkCopilot ⭐
-Interactive ChatGPT-style experience with conversation history, commands, and enhanced UI. **Recommended for interactive use.**
+Interactive ChatGPT-style experience with conversation history, commands, and enhanced UI. Uses **AgentThread** to maintain conversation context and state across multiple interactions. **Recommended for interactive use.**
 
 ## ✨ Key Features
 
 - 🔌 Connection to Microsoft Learn MCP Server
 - 🔍 Dynamic tool discovery (search, fetch, code samples)
 - 🤖 AI Agent powered by Azure OpenAI
+- 🧵 AgentThread for maintaining conversation context and state
 - 💬 Interactive chat loop with conversation history
 - 📊 Real-time metrics and colored UI
 - 💾 Save conversations to file
@@ -43,7 +44,7 @@ Edit `launchSettings.json` in each project's `Properties` folder:
       "commandName": "Project",
       "environmentVariables": {
         "AZURE_OPENAI_ENDPOINT": "https://your-resource.openai.azure.com/",
-        "AZURE_OPENAI_DEPLOYMENT_NAME": "gpt-4o-mini"
+        "AZURE_OPENAI_DEPLOYMENT_NAME": "gpt-5-mini"
       }
     }
   }
@@ -98,13 +99,24 @@ Once running `AgentFrameworkCopilot`:
 - `Microsoft.Agents.AI.OpenAI` (1.0.0-preview.251028.1)
 - `ModelContextProtocol` (0.4.0-preview.3)
 
-## � How It Works
+## 🔄 How It Works
 
 1. Connects to Microsoft Learn MCP Server (https://learn.microsoft.com/api/mcp)
 2. Discovers available tools (docs search, code samples, etc.)
-3. Creates an AI Agent with Azure OpenAI (`gpt-4o-mini`)
-4. Agent automatically uses MCP tools to fetch official documentation
-5. Returns answers with official Microsoft Learn references
+3. Creates an AI Agent with Azure OpenAI (`gpt-5-mini`)
+4. Initializes an **AgentThread** to maintain conversation state
+5. Agent automatically uses MCP tools to fetch official documentation
+6. AgentThread tracks all messages and context across the conversation
+7. Returns answers with official Microsoft Learn references
+
+### 🧵 About AgentThreads
+
+**AgentThread** is a key component of the Microsoft Agent Framework that:
+- Maintains conversation context across multiple user interactions
+- Automatically tracks all messages (user queries and agent responses)
+- Preserves state between agent runs
+- Enables multi-turn conversations with memory
+- Can be reset with `/clear` command to start fresh conversations
 
 ## 🔐 Authentication
 
