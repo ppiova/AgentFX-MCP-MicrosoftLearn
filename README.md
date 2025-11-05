@@ -54,6 +54,23 @@ Edit `launchSettings.json` in each project's `Properties` folder:
 
 ```bash
 # Simple demo
+### Option 2: Environment variables in PowerShell
+
+```powershell
+$env:AZURE_OPENAI_ENDPOINT = "https://your-resource.openai.azure.com/"
+$env:AZURE_OPENAI_DEPLOYMENT_NAME = "gpt-5-mini"
+```
+
+### Option 3: Permanent environment variables
+
+```powershell
+[System.Environment]::SetEnvironmentVariable('AZURE_OPENAI_ENDPOINT', 'https://your-resource.openai.azure.com/', 'User')
+[System.Environment]::SetEnvironmentVariable('AZURE_OPENAI_DEPLOYMENT_NAME', 'gpt-5-mini', 'User')
+```
+
+## 🏃 Run
+
+```powershell
 cd AgentFrameworkWithLearnMcp
 dotnet run
 
