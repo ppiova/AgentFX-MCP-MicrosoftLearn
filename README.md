@@ -1,86 +1,101 @@
 # Agent Framework with Microsoft Learn MCP
 
-This project demonstrates the integration of the **Microsoft Agent Framework** with the **Model Context Protocol (MCP)** from Microsoft Learn.
+Two .NET console applications demonstrating the integration of **Microsoft Agent Framework** with **Model Context Protocol (MCP)** to access Microsoft Learn documentation.
 
-## 🚀 Features
+## � Projects
 
-- Connection to Microsoft Learn MCP server
-- Dynamic discovery of tools (search, fetch, code samples)
-- AI Agent with Azure OpenAI that uses official Microsoft documentation
+### 1. AgentFrameworkWithLearnMcp
+Simple demo with a single question execution. Perfect for learning the basics.
+
+### 2. AgentFrameworkCopilot ⭐
+Interactive ChatGPT-style experience with conversation history, commands, and enhanced UI. **Recommended for interactive use.**
+
+## ✨ Key Features
+
+- 🔌 Connection to Microsoft Learn MCP Server
+- 🔍 Dynamic tool discovery (search, fetch, code samples)
+- 🤖 AI Agent powered by Azure OpenAI
+- 💬 Interactive chat loop with conversation history
+- 📊 Real-time metrics and colored UI
+- 💾 Save conversations to file
 
 ## 📋 Prerequisites
 
-- .NET 9.0
+- .NET 9.0 SDK
 - Azure OpenAI Service with a deployment
-- Azure CLI installed and authenticated (`az login`)
+- Azure CLI (`az login`)
 
-## ⚙️ Configuration
+## ⚙️ Quick Setup
 
-### Option 1: Using launchSettings.json (Recommended for development)
-
-1. Edit the file `AgentFrameworkWithLearnMcp/Properties/launchSettings.json`
-2. Replace the values with your configuration:
-   ```json
-   {
-     "profiles": {
-       "AgentFrameworkWithLearnMcp": {
-         "commandName": "Project",
-         "environmentVariables": {
-           "AZURE_OPENAI_ENDPOINT": "https://TU-RECURSO.openai.azure.com/",
-           "AZURE_OPENAI_DEPLOYMENT_NAME": "gpt-4"
-         }
-       }
-     }
-   }
-   ```
-
-### Option 2: Environment variables in PowerShell
-
-```powershell
-$env:AZURE_OPENAI_ENDPOINT = "https://your-resource.openai.azure.com/"
-$env:AZURE_OPENAI_DEPLOYMENT_NAME = "gpt-4"
+1. **Authenticate with Azure:**
+```bash
+az login
 ```
 
-### Option 3: Permanent environment variables
+2. **Configure your Azure OpenAI settings:**
 
-```powershell
-[System.Environment]::SetEnvironmentVariable('AZURE_OPENAI_ENDPOINT', 'https://your-resource.openai.azure.com/', 'User')
-[System.Environment]::SetEnvironmentVariable('AZURE_OPENAI_DEPLOYMENT_NAME', 'gpt-4', 'User')
+Edit `launchSettings.json` in each project's `Properties` folder:
+
+```json
+{
+  "profiles": {
+    "AgentFrameworkCopilot": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "AZURE_OPENAI_ENDPOINT": "https://your-resource.openai.azure.com/",
+        "AZURE_OPENAI_DEPLOYMENT_NAME": "gpt-4o-mini"
+      }
+    }
+  }
+}
 ```
 
-## 🏃 Run
+3. **Run the project:**
 
-```powershell
+```bash
+# Simple demo
 cd AgentFrameworkWithLearnMcp
+dotnet run
+
+# Interactive chat (recommended)
+cd AgentFrameworkCopilot
 dotnet run
 ```
 
-Or from Visual Studio/VS Code: press F5
+## 💬 Interactive Commands
 
-## 📝 How to get Azure OpenAI credentials
+Once running `AgentFrameworkCopilot`:
 
-1. Go to the [Azure Portal](https://portal.azure.com)
-2. Search for your Azure OpenAI resource
-3. Copy the **Endpoint** (under "Keys and Endpoint")
-4. Go to "Model deployments" and copy your deployment name
+| Command | Description |
+|---------|-------------|
+| `/help` | Show available commands |
+| `/clear` | Start new conversation |
+| `/history` | View conversation history |
+| `/save` | Save conversation to file |
+| `/exit` | Quit application |
 
-## 🔐 Authentication
-
-The project uses `AzureCliCredential`, so make sure to:
-1. Have Azure CLI installed
-2. Run `az login`
-3. Have permissions on the Azure OpenAI resource
-
-## 📦 Packages Used
+## 📦 Dependencies
 
 - `Azure.AI.OpenAI` (2.5.0-beta.1)
 - `Azure.Identity` (1.17.0)
 - `Microsoft.Agents.AI.OpenAI` (1.0.0-preview.251028.1)
 - `ModelContextProtocol` (0.4.0-preview.3)
 
-## 🛠️ Available MCP Tools
+## � How It Works
 
-The Microsoft Learn MCP server exposes:
-- `microsoft_docs_search` - Search documentation
-- `microsoft_code_sample_search` - Search code examples
-- `microsoft_docs_fetch` - Fetch specific documentation
+1. Connects to Microsoft Learn MCP Server (https://learn.microsoft.com/api/mcp)
+2. Discovers available tools (docs search, code samples, etc.)
+3. Creates an AI Agent with Azure OpenAI (`gpt-4o-mini`)
+4. Agent automatically uses MCP tools to fetch official documentation
+5. Returns answers with official Microsoft Learn references
+
+## 🔐 Authentication
+
+Uses `AzureCliCredential` for Azure authentication. Ensure you have:
+- Azure CLI installed
+- Authenticated via `az login`
+- Proper permissions on the Azure OpenAI resource
+
+---
+
+**Happy coding!** 🎉
