@@ -15,7 +15,8 @@ Interactive ChatGPT-style experience with conversation history, commands, and en
 - 🔌 Connection to Microsoft Learn MCP Server
 - 🔍 Dynamic tool discovery (search, fetch, code samples)
 - 🤖 AI Agent powered by Azure OpenAI
-- 🧵 AgentThread for maintaining conversation context and state
+- 🧵 **AgentThread**  for maintaining conversation context and state
+- 🧠 **Memory Store** for persistent user context and personalization
 - 💬 Interactive chat loop with conversation history
 - 📊 Real-time metrics and colored UI
 - 💾 Save conversations to file
@@ -89,6 +90,8 @@ Once running `AgentFrameworkCopilot`:
 | `/help` | Show available commands |
 | `/clear` | Start new conversation |
 | `/history` | View conversation history |
+| `/memory` | Show all stored memories |
+| `/profile` | Display user profile information |
 | `/save` | Save conversation to file |
 | `/exit` | Quit application |
 
@@ -112,11 +115,39 @@ Once running `AgentFrameworkCopilot`:
 ### 🧵 About AgentThreads
 
 **AgentThread** is a key component of the Microsoft Agent Framework that:
+
 - Maintains conversation context across multiple user interactions
 - Automatically tracks all messages (user queries and agent responses)
 - Preserves state between agent runs
 - Enables multi-turn conversations with memory
 - Can be reset with `/clear` command to start fresh conversations
+
+### 🧠 About Memory Store
+
+The **Memory Store** provides persistent context and personalization capabilities:
+
+- **User Profile**: Stores personal information (name, title, interests, location)
+- **Contextual Awareness**: Agent remembers user preferences and details across conversations
+- **Custom Memories**: Extensible key-value storage for any user-specific data
+- **Integrated with System Prompt**: Memory context is automatically injected into agent instructions
+- **Commands**:
+  - `/memory` - View all stored memories
+  - `/profile` - Display formatted user profile
+
+#### Default User Profile
+
+The application loads a default profile for demonstration:
+
+```csharp
+Name: Pablo Piovano
+Nickname: Pablito Piova
+Title: Microsoft MVP
+Interests: Café, Cocinar Asados Argentinos, Viajar
+Location: Sunchales, Santa Fe
+Country: Argentina
+```
+
+You can customize the profile by editing the `LoadDefaultUserProfile()` method in `Program.cs`.
 
 ## 🔐 Authentication
 

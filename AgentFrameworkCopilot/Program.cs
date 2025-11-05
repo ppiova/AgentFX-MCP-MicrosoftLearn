@@ -10,18 +10,69 @@ using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using ModelContextProtocol.Client;
 
+// Simple in-memory store for user context and memories
+class MemoryStore
+{
+    private readonly Dictionary<string, string> memories = new();
+
+    public void AddMemory(string key, string value)
+    {
+        memories[key] = value;
+    }
+
+    public string? GetMemory(string key)
+    {
+        return memories.TryGetValue(key, out var value) ? value : null;
+    }
+
+    public string GetAllMemoriesAsContext()
+    {
+        if (memories.Count == 0)
+            return string.Empty;
+
+        var sb = new StringBuilder();
+        sb.AppendLine("### User Context & Memories:");
+        foreach (var (key, value) in memories)
+        {
+            sb.AppendLine($"- {key}: {value}");
+        }
+        return sb.ToString();
+    }
+
+    public void LoadDefaultUserProfile()
+    {
+        // Información personal de Pablo Piovano
+        AddMemory("user_name", "Pablo Piovano");
+        AddMemory("nickname", "Pablito Piova");
+        AddMemory("title", "Microsoft MVP");
+        AddMemory("interests", "Café, Cocinar Asados Argentinos, Viajar");
+        AddMemory("location", "Sunchales, Santa Fe");
+        AddMemory("country", "Argentina");
+        AddMemory("friends", "Amigo de Bruno y Quique");
+    }
+}
 class Program
 {
     private static readonly List<ChatMessage> conversationHistory = new();
     private static int messageCount = 0;
     private static AIAgent? agent;
     private static AgentThread? thread;
+    private static MemoryStore? memoryStore;
 
     static async Task Main()
     {
         Console.OutputEncoding = Encoding.UTF8;
         
         PrintWelcomeBanner();
+
+        // === 0) Initialize Memory Store ===
+        PrintInfo("🧠 Initializing Memory Store...");
+        memoryStore = new MemoryStore();
+        memoryStore.LoadDefaultUserProfile();
+        PrintSuccess("✓ Memory Store loaded with user profile");
+        Console.ForegroundColor = ConsoleColor.DarkGray;
+        Console.WriteLine("   Loaded profile: Pablo Piovano (Pablito Piova)");
+        Console.ResetColor();
 
         // === 1) Connect to Microsoft Learn MCP Server ===
         PrintInfo("🔌 Connecting to Microsoft Learn MCP Server...");
@@ -64,12 +115,15 @@ class Program
             .GetChatClient(deployment)
             .AsIChatClient();
 
+        // Build system prompt with memory context
+        var memoryContext = memoryStore.GetAllMemoriesAsContext();
         var systemPrompt =
             "You are an expert agent in Microsoft technologies. " +
             "For any question about Azure/.NET/Windows/VS/Entra/M365, " +
             "you MUST first use the Microsoft Learn MCP Server tools " +
             "(search/fetch/code samples) and cite the official URL. " +
-            "Be conversational, helpful, and provide practical examples when possible.";
+            "Be conversational, helpful, and provide practical examples when possible.\n\n" +
+            memoryContext;
 
         agent = chatClient.CreateAIAgent(
             instructions: systemPrompt,
@@ -184,6 +238,14 @@ class Program
                 await SaveConversation();
                 return true;
 
+            case "/memory":
+                ShowMemory();
+                return true;
+
+            case "/profile":
+                ShowUserProfile();
+                return true;
+
             default:
                 PrintError($"Unknown command: {command}");
                 PrintInfo("Type /help to see available commands");
@@ -230,8 +292,44 @@ class Program
         Console.WriteLine("  /clear     - Clear conversation and start fresh");
         Console.WriteLine("  /new       - Same as /clear");
         Console.WriteLine("  /history   - Show conversation history");
+        Console.WriteLine("  /memory    - Show all stored memories");
+        Console.WriteLine("  /profile   - Show user profile information");
         Console.WriteLine("  /save      - Save conversation to file");
         Console.WriteLine("  /exit      - Exit the application");
+        Console.ResetColor();
+        Console.WriteLine(new string('─', 60));
+    }
+
+    static void ShowMemory()
+    {
+        Console.WriteLine("\n🧠 Memory Store Contents:");
+        Console.WriteLine(new string('─', 60));
+        Console.ForegroundColor = ConsoleColor.Cyan;
+        Console.WriteLine(memoryStore!.GetAllMemoriesAsContext());
+        Console.ResetColor();
+        Console.WriteLine(new string('─', 60));
+    }
+
+    static void ShowUserProfile()
+    {
+        Console.WriteLine("\n👤 User Profile:");
+        Console.WriteLine(new string('─', 60));
+        Console.ForegroundColor = ConsoleColor.Magenta;
+        
+        var name = memoryStore!.GetMemory("user_name");
+        var nickname = memoryStore.GetMemory("nickname");
+        var title = memoryStore.GetMemory("title");
+        var interests = memoryStore.GetMemory("interests");
+        var location = memoryStore.GetMemory("location");
+        var country = memoryStore.GetMemory("country");
+
+        Console.WriteLine($"  Nombre:     {name}");
+        Console.WriteLine($"  Apodo:      {nickname}");
+        Console.WriteLine($"  Título:     {title}");
+        Console.WriteLine($"  Intereses:  {interests}");
+        Console.WriteLine($"  Ciudad:     {location}");
+        Console.WriteLine($"  País:       {country}");
+        
         Console.ResetColor();
         Console.WriteLine(new string('─', 60));
     }
