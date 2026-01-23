@@ -2,7 +2,7 @@
 
 Two .NET console applications demonstrating the integration of **Microsoft Agent Framework** with **Model Context Protocol (MCP)** to access Microsoft Learn documentation.
 
-## � Projects
+## 📦 Projects
 
 ### 1. AgentFrameworkWithLearnMcp
 Simple demo with a single question execution. Perfect for learning the basics.
@@ -75,7 +75,7 @@ Or update `appsettings.json` in each project:
 
 3. **Run the project:**
 
-### Option 2: Environment variables in PowerShell
+### Option 1: Environment variables in PowerShell
 
 ```powershell
 $env:AZURE_OPENAI_ENDPOINT = "https://your-resource.openai.azure.com/"
@@ -86,7 +86,7 @@ $env:LEARN_MCP_ENDPOINT = "https://learn.microsoft.com/api/mcp"
 $env:MEMORY_FILE = "memory.json"
 ```
 
-### Option 3: Permanent environment variables
+### Option 2: Permanent environment variables
 
 ```powershell
 [System.Environment]::SetEnvironmentVariable('AZURE_OPENAI_ENDPOINT', 'https://your-resource.openai.azure.com/', 'User')
@@ -175,12 +175,33 @@ The application loads a default profile for demonstration:
 Name: Pablo Piovano
 Nickname: Pablito Piova
 Title: Microsoft MVP
-Interests: Café, Cocinar Asados Argentinos, Viajar
+Interests: Coffee, Argentine BBQ cooking, Traveling
 Location: Sunchales, Santa Fe
 Country: Argentina
 ```
 
-You can customize the profile by editing the `LoadDefaultUserProfile()` method in `Program.cs`.
+You can customize the profile by editing the `LoadDefaultUserProfile()` method in MemoryStore.cs.
+
+### 🧪 Demo Question Overrides (AgentFrameworkWithLearnMcp)
+
+You can override the demo question using either command-line args or configuration:
+
+- **Args:**
+  ```powershell
+  dotnet run -- "How do I create an agent in Azure AI Foundry Agents?"
+  ```
+- **Environment variable:**
+  ```powershell
+  $env:DEMO_QUESTION = "How do I create an agent in Azure AI Foundry Agents?"
+  ```
+- **appsettings.json:**
+  ```json
+  {
+    "Demo": {
+      "Question": "How do I create an agent in Azure AI Foundry Agents?"
+    }
+  }
+  ```
 
 ## 🔐 Authentication
 
