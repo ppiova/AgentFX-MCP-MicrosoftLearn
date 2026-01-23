@@ -146,7 +146,18 @@ class Program
             catch (Exception ex) when (IsTransient(ex) && attempt < maxAttempts)
             {
                 var delay = TimeSpan.FromMilliseconds(baseDelayMs * Math.Pow(2, attempt - 1));
-                Console.WriteLine($"Transient error during {operationName}. Retrying in {delay.TotalMilliseconds}ms...");
+                if (ex is RequestFailedException rfe && rfe.Status == 429)
+                {
+                    Console.WriteLine($"Rate limit during {operationName}. Retrying in {delay.TotalMilliseconds}ms...");
+                }
+                else if (ex is RequestFailedException rfe2)
+                {
+                    Console.WriteLine($"Service error {rfe2.Status} during {operationName}. Retrying in {delay.TotalMilliseconds}ms...");
+                }
+                else
+                {
+                    Console.WriteLine($"Transient error during {operationName}. Retrying in {delay.TotalMilliseconds}ms...");
+                }
                 await Task.Delay(delay, cancellationToken);
             }
         }

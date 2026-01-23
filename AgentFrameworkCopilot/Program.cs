@@ -312,7 +312,14 @@ class Program
             }
             catch (Exception ex)
             {
-                PrintError($"❌ Error: {ex.Message}");
+                if (ex is RequestFailedException rfe && rfe.Status == 429)
+                {
+                    PrintError("❌ Rate limit reached. Please wait a moment and retry.");
+                }
+                else
+                {
+                    PrintError($"❌ Error: {ex.Message}");
+                }
                 logger?.LogError(ex, "Agent execution failed");
                 // Remove the failed user message
                 conversationHistory.RemoveAt(conversationHistory.Count - 1);
@@ -584,7 +591,18 @@ class Program
             {
                 sw.Stop();
                 var delay = TimeSpan.FromMilliseconds(baseDelayMs * Math.Pow(2, attempt - 1));
-                PrintError($"Transient error during {operationName}. Retrying in {delay.TotalMilliseconds}ms...");
+                if (ex is RequestFailedException rfe && rfe.Status == 429)
+                {
+                    PrintError($"Rate limit during {operationName}. Retrying in {delay.TotalMilliseconds}ms...");
+                }
+                else if (ex is RequestFailedException rfe2)
+                {
+                    PrintError($"Service error {rfe2.Status} during {operationName}. Retrying in {delay.TotalMilliseconds}ms...");
+                }
+                else
+                {
+                    PrintError($"Transient error during {operationName}. Retrying in {delay.TotalMilliseconds}ms...");
+                }
                 logger?.LogWarning(ex, "Transient error during {Operation} (attempt {Attempt}/{Max})", operationName, attempt, maxAttempts);
                 await Task.Delay(delay, cancellationToken);
             }
