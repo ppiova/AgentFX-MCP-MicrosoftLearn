@@ -54,8 +54,7 @@ class Program
 
         // === 4) Example execution: the question forces the use of official docs ===
         var demoQuestion =
-            "I need information on how to create an agent in Azure AI Foundry Agents. " +
-            "Include the Learn reference and code examples if they exist.";
+            "I need information on how to create an agent in Azure AI Foundry Agents.";
 
         var result = await agent.RunAsync(demoQuestion);
         Console.WriteLine("\n=== Agent Response ===\n");
