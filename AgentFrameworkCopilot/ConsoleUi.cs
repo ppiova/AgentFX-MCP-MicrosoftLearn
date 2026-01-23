@@ -124,12 +124,12 @@ static class ConsoleUi
         var location = memoryStore.GetMemory("location");
         var country = memoryStore.GetMemory("country");
 
-        Console.WriteLine($"  Nombre:     {name}");
-        Console.WriteLine($"  Apodo:      {nickname}");
-        Console.WriteLine($"  Título:     {title}");
-        Console.WriteLine($"  Intereses:  {interests}");
-        Console.WriteLine($"  Ciudad:     {location}");
-        Console.WriteLine($"  País:       {country}");
+        Console.WriteLine($"  Name:       {name}");
+        Console.WriteLine($"  Nickname:   {nickname}");
+        Console.WriteLine($"  Title:      {title}");
+        Console.WriteLine($"  Interests:  {interests}");
+        Console.WriteLine($"  City:       {location}");
+        Console.WriteLine($"  Country:    {country}");
 
         Console.ResetColor();
         Console.WriteLine(new string('─', 60));

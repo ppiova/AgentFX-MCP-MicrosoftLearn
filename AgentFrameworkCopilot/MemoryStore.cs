@@ -70,13 +70,13 @@ class MemoryStore
 
     public void LoadDefaultUserProfile()
     {
-        // Información personal de Pablo Piovano
+        // Personal information for Pablo Piovano
         AddMemory("user_name", "Pablo Piovano");
         AddMemory("nickname", "Pablito Piova");
         AddMemory("title", "Microsoft MVP");
-        AddMemory("interests", "Café, Cocinar Asados Argentinos, Viajar");
+        AddMemory("interests", "Coffee, Argentine BBQ cooking, Traveling");
         AddMemory("location", "Sunchales, Santa Fe");
         AddMemory("country", "Argentina");
-        AddMemory("friends", "Amigo de Bruno y Quique");
+        AddMemory("friends", "Friend of Bruno and Quique");
     }
 }

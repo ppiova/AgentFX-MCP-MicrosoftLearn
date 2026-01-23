@@ -99,7 +99,7 @@ class AgentApp
         }
 
         Console.ForegroundColor = ConsoleColor.DarkGray;
-        Console.WriteLine("   Loaded profile: Pablo Piovano (Pablito Piova)");
+            Console.WriteLine("   Loaded profile: Pablo Piovano (Pablito Piova)");
         Console.ResetColor();
     }
 
