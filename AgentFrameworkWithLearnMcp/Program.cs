@@ -23,7 +23,13 @@ class Program
             Console.WriteLine("Cancellation requested. Finishing current step...");
         };
 
-    var configuration = BuildConfiguration();
+        var configuration = BuildConfiguration();
+        var retryMaxAttempts = GetOptionalSetting(configuration, "Retry:MaxAttempts") is string attempts && int.TryParse(attempts, out var parsedAttempts)
+            ? parsedAttempts
+            : 3;
+        var retryBaseDelayMs = GetOptionalSetting(configuration, "Retry:BaseDelayMs") is string delay && int.TryParse(delay, out var parsedDelay)
+            ? parsedDelay
+            : 500;
         // === 1) Connect to Microsoft Learn MCP Server (HTTP/Streamable HTTP) ===
         var learnEndpoint = GetOptionalSetting(configuration, "LEARN_MCP_ENDPOINT", "LearnMcp:Endpoint")
             ?? "https://learn.microsoft.com/api/mcp";
@@ -39,7 +45,8 @@ class Program
         await using var mcp = await RunWithRetryAsync(
             () => McpClient.CreateAsync(httpTransport),
             operationName: "MCP connect",
-            maxAttempts: 3,
+            maxAttempts: retryMaxAttempts,
+            baseDelayMs: retryBaseDelayMs,
             cancellationToken: cts.Token);
         Console.WriteLine("Connected to Learn MCP.");
 
@@ -47,7 +54,8 @@ class Program
         var mcpTools = (await RunWithRetryAsync(
             () => mcp.ListToolsAsync(),
             operationName: "MCP list tools",
-            maxAttempts: 3,
+            maxAttempts: retryMaxAttempts,
+            baseDelayMs: retryBaseDelayMs,
             cancellationToken: cts.Token)).Cast<AITool>().ToList();
         Console.WriteLine("Tools exposed by Learn MCP:");
         foreach (var t in mcpTools) Console.WriteLine($" - {t.Name}");
@@ -81,7 +89,8 @@ class Program
         var result = await RunWithRetryAsync(
             () => agent.RunAsync(demoQuestion),
             operationName: "Agent run",
-            maxAttempts: 3,
+            maxAttempts: retryMaxAttempts,
+            baseDelayMs: retryBaseDelayMs,
             cancellationToken: cts.Token);
         Console.WriteLine("\n=== Agent Response ===\n");
         Console.WriteLine(result.Text);

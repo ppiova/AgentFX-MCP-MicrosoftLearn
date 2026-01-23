@@ -106,6 +106,8 @@ class Program
     private static IConfiguration? configuration;
     private static ILogger? logger;
     private static CancellationTokenSource? cancellationTokenSource;
+    private static int retryMaxAttempts = 3;
+    private static int retryBaseDelayMs = 500;
 
     static async Task Main()
     {
@@ -115,6 +117,13 @@ class Program
 
         configuration = BuildConfiguration();
         logger = BuildLogger(configuration);
+
+        retryMaxAttempts = GetOptionalSetting("Retry:MaxAttempts") is string attempts && int.TryParse(attempts, out var parsedAttempts)
+            ? parsedAttempts
+            : 3;
+        retryBaseDelayMs = GetOptionalSetting("Retry:BaseDelayMs") is string delay && int.TryParse(delay, out var parsedDelay)
+            ? parsedDelay
+            : 500;
 
         Console.CancelKeyPress += (_, e) =>
         {
@@ -170,8 +179,10 @@ class Program
         await using var mcp = await RunWithRetryAsync(
             () => McpClient.CreateAsync(httpTransport),
             operationName: "MCP connect",
-            maxAttempts: 3,
-            cancellationToken: cancellationTokenSource.Token);
+            maxAttempts: retryMaxAttempts,
+            baseDelayMs: retryBaseDelayMs,
+            cancellationToken: cancellationTokenSource.Token,
+            emitConsoleTiming: true);
         PrintSuccess("✓ Connected to Learn MCP");
 
         // === 2) Discover MCP tools dynamically ===
@@ -179,8 +190,10 @@ class Program
         var mcpTools = (await RunWithRetryAsync(
             () => mcp.ListToolsAsync(),
             operationName: "MCP list tools",
-            maxAttempts: 3,
-            cancellationToken: cancellationTokenSource.Token)).Cast<AITool>().ToList();
+            maxAttempts: retryMaxAttempts,
+            baseDelayMs: retryBaseDelayMs,
+            cancellationToken: cancellationTokenSource.Token,
+            emitConsoleTiming: true)).Cast<AITool>().ToList();
         PrintSuccess($"✓ Loaded {mcpTools.Count} tools from Microsoft Learn");
         
         if (mcpTools.Any())
@@ -276,8 +289,10 @@ class Program
                 var result = await RunWithRetryAsync(
                     () => agent!.RunAsync(userInput, thread!),
                     operationName: "Agent run",
-                    maxAttempts: 3,
-                    cancellationToken: cancellationTokenSource.Token);
+                    maxAttempts: retryMaxAttempts,
+                    baseDelayMs: retryBaseDelayMs,
+                    cancellationToken: cancellationTokenSource.Token,
+                    emitConsoleTiming: false);
 
                 stopwatch.Stop();
 
@@ -545,7 +560,8 @@ class Program
         string operationName,
         int maxAttempts = 3,
         int baseDelayMs = 500,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        bool emitConsoleTiming = false)
     {
         for (var attempt = 1; attempt <= maxAttempts; attempt++)
         {
@@ -556,6 +572,12 @@ class Program
                 var result = await operation();
                 sw.Stop();
                 logger?.LogInformation("{Operation} completed in {Elapsed}ms", operationName, sw.ElapsedMilliseconds);
+                if (emitConsoleTiming)
+                {
+                    Console.ForegroundColor = ConsoleColor.DarkGray;
+                    Console.WriteLine($"⏱️  {operationName} took {sw.ElapsedMilliseconds}ms");
+                    Console.ResetColor();
+                }
                 return result;
             }
             catch (Exception ex) when (IsTransient(ex) && attempt < maxAttempts)

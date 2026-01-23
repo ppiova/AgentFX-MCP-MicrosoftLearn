@@ -65,6 +65,10 @@ Or update `appsettings.json` in each project:
   },
   "Memory": {
     "File": "memory.json"
+  },
+  "Retry": {
+    "MaxAttempts": 3,
+    "BaseDelayMs": 500
   }
 }
 ```
@@ -105,6 +109,8 @@ dotnet run
 Saved conversations are written to the logs/ folder.
 
 The memory store is persisted to MEMORY_FILE (default: memory.json).
+
+Retry behavior can be configured via Retry:MaxAttempts and Retry:BaseDelayMs.
 
 ## 💬 Interactive Commands
 
