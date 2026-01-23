@@ -27,11 +27,17 @@ class Program
             Endpoint = learnEndpointUri
         });
 
-        await using var mcp = await McpClient.CreateAsync(httpTransport);
+        await using var mcp = await RunWithRetryAsync(
+            () => McpClient.CreateAsync(httpTransport),
+            operationName: "MCP connect",
+            maxAttempts: 3);
         Console.WriteLine("Connected to Learn MCP.");
 
         // === 2) Discover MCP tools dynamically ===
-        var mcpTools = (await mcp.ListToolsAsync()).Cast<AITool>().ToList();
+        var mcpTools = (await RunWithRetryAsync(
+            () => mcp.ListToolsAsync(),
+            operationName: "MCP list tools",
+            maxAttempts: 3)).Cast<AITool>().ToList();
         Console.WriteLine("Tools exposed by Learn MCP:");
         foreach (var t in mcpTools) Console.WriteLine($" - {t.Name}");
 
@@ -61,7 +67,10 @@ class Program
         var demoQuestion =
             "I need information on how to create an agent in Azure AI Foundry Agents.";
 
-        var result = await agent.RunAsync(demoQuestion);
+        var result = await RunWithRetryAsync(
+            () => agent.RunAsync(demoQuestion),
+            operationName: "Agent run",
+            maxAttempts: 3);
         Console.WriteLine("\n=== Agent Response ===\n");
         Console.WriteLine(result.Text);
 
@@ -97,5 +106,36 @@ class Program
 
         throw new InvalidOperationException(
             $"Missing required setting. Set one of: {string.Join(", ", keys)}");
+    }
+
+    static async Task<T> RunWithRetryAsync<T>(
+        Func<Task<T>> operation,
+        string operationName,
+        int maxAttempts = 3,
+        int baseDelayMs = 500)
+    {
+        for (var attempt = 1; attempt <= maxAttempts; attempt++)
+        {
+            try
+            {
+                return await operation();
+            }
+            catch (Exception ex) when (IsTransient(ex) && attempt < maxAttempts)
+            {
+                var delay = TimeSpan.FromMilliseconds(baseDelayMs * Math.Pow(2, attempt - 1));
+                Console.WriteLine($"Transient error during {operationName}. Retrying in {delay.TotalMilliseconds}ms...");
+                await Task.Delay(delay);
+            }
+        }
+
+        // Final attempt without catching
+        return await operation();
+    }
+
+    static bool IsTransient(Exception ex)
+    {
+        return ex is HttpRequestException
+            || ex is TaskCanceledException
+            || ex is TimeoutException;
     }
 }

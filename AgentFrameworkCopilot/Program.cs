@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Azure.AI.OpenAI;
 using Azure.Identity;
@@ -161,12 +162,18 @@ class Program
             Endpoint = learnEndpointUri
         });
 
-        await using var mcp = await McpClient.CreateAsync(httpTransport);
+        await using var mcp = await RunWithRetryAsync(
+            () => McpClient.CreateAsync(httpTransport),
+            operationName: "MCP connect",
+            maxAttempts: 3);
         PrintSuccess("✓ Connected to Learn MCP");
 
         // === 2) Discover MCP tools dynamically ===
         PrintInfo("🔧 Loading available tools...");
-        var mcpTools = (await mcp.ListToolsAsync()).Cast<AITool>().ToList();
+        var mcpTools = (await RunWithRetryAsync(
+            () => mcp.ListToolsAsync(),
+            operationName: "MCP list tools",
+            maxAttempts: 3)).Cast<AITool>().ToList();
         PrintSuccess($"✓ Loaded {mcpTools.Count} tools from Microsoft Learn");
         
         if (mcpTools.Any())
@@ -259,7 +266,10 @@ class Program
             {
                 // Run the agent with the AgentThread to maintain conversation context
                 // The thread automatically tracks all messages and maintains state
-                var result = await agent!.RunAsync(userInput, thread!);
+                var result = await RunWithRetryAsync(
+                    () => agent!.RunAsync(userInput, thread!),
+                    operationName: "Agent run",
+                    maxAttempts: 3);
 
                 stopwatch.Stop();
 
@@ -520,6 +530,38 @@ class Program
         {
             PrintError($"❌ Failed to save memory file: {ex.Message}");
         }
+    }
+
+    static async Task<T> RunWithRetryAsync<T>(
+        Func<Task<T>> operation,
+        string operationName,
+        int maxAttempts = 3,
+        int baseDelayMs = 500)
+    {
+        for (var attempt = 1; attempt <= maxAttempts; attempt++)
+        {
+            try
+            {
+                return await operation();
+            }
+            catch (Exception ex) when (IsTransient(ex) && attempt < maxAttempts)
+            {
+                var delay = TimeSpan.FromMilliseconds(baseDelayMs * Math.Pow(2, attempt - 1));
+                PrintError($"Transient error during {operationName}. Retrying in {delay.TotalMilliseconds}ms...");
+                logger?.LogWarning(ex, "Transient error during {Operation} (attempt {Attempt}/{Max})", operationName, attempt, maxAttempts);
+                await Task.Delay(delay);
+            }
+        }
+
+        // Final attempt without catching
+        return await operation();
+    }
+
+    static bool IsTransient(Exception ex)
+    {
+        return ex is HttpRequestException
+            || ex is TaskCanceledException
+            || ex is TimeoutException;
     }
 
     static void BuildOrRefreshAgent()
