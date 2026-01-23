@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Azure;
 using Azure.AI.OpenAI;
 using Azure.Identity;
 using Microsoft.Agents.AI;
@@ -104,10 +105,13 @@ class Program
     private static string? baseSystemPrompt;
     private static IConfiguration? configuration;
     private static ILogger? logger;
+    private static CancellationTokenSource? cancellationTokenSource;
 
     static async Task Main()
     {
         Console.OutputEncoding = Encoding.UTF8;
+
+        cancellationTokenSource = new CancellationTokenSource();
 
         configuration = BuildConfiguration();
         logger = BuildLogger(configuration);
@@ -116,6 +120,7 @@ class Program
         {
             e.Cancel = true;
             exitRequested = true;
+            cancellationTokenSource.Cancel();
             PrintInfo("\nCancellation requested. Finishing current response...");
         };
         
@@ -165,7 +170,8 @@ class Program
         await using var mcp = await RunWithRetryAsync(
             () => McpClient.CreateAsync(httpTransport),
             operationName: "MCP connect",
-            maxAttempts: 3);
+            maxAttempts: 3,
+            cancellationToken: cancellationTokenSource.Token);
         PrintSuccess("✓ Connected to Learn MCP");
 
         // === 2) Discover MCP tools dynamically ===
@@ -173,7 +179,8 @@ class Program
         var mcpTools = (await RunWithRetryAsync(
             () => mcp.ListToolsAsync(),
             operationName: "MCP list tools",
-            maxAttempts: 3)).Cast<AITool>().ToList();
+            maxAttempts: 3,
+            cancellationToken: cancellationTokenSource.Token)).Cast<AITool>().ToList();
         PrintSuccess($"✓ Loaded {mcpTools.Count} tools from Microsoft Learn");
         
         if (mcpTools.Any())
@@ -269,7 +276,8 @@ class Program
                 var result = await RunWithRetryAsync(
                     () => agent!.RunAsync(userInput, thread!),
                     operationName: "Agent run",
-                    maxAttempts: 3);
+                    maxAttempts: 3,
+                    cancellationToken: cancellationTokenSource.Token);
 
                 stopwatch.Stop();
 
@@ -536,20 +544,27 @@ class Program
         Func<Task<T>> operation,
         string operationName,
         int maxAttempts = 3,
-        int baseDelayMs = 500)
+        int baseDelayMs = 500,
+        CancellationToken cancellationToken = default)
     {
         for (var attempt = 1; attempt <= maxAttempts; attempt++)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+            var sw = Stopwatch.StartNew();
             try
             {
-                return await operation();
+                var result = await operation();
+                sw.Stop();
+                logger?.LogInformation("{Operation} completed in {Elapsed}ms", operationName, sw.ElapsedMilliseconds);
+                return result;
             }
             catch (Exception ex) when (IsTransient(ex) && attempt < maxAttempts)
             {
+                sw.Stop();
                 var delay = TimeSpan.FromMilliseconds(baseDelayMs * Math.Pow(2, attempt - 1));
                 PrintError($"Transient error during {operationName}. Retrying in {delay.TotalMilliseconds}ms...");
                 logger?.LogWarning(ex, "Transient error during {Operation} (attempt {Attempt}/{Max})", operationName, attempt, maxAttempts);
-                await Task.Delay(delay);
+                await Task.Delay(delay, cancellationToken);
             }
         }
 
@@ -561,7 +576,8 @@ class Program
     {
         return ex is HttpRequestException
             || ex is TaskCanceledException
-            || ex is TimeoutException;
+            || ex is TimeoutException
+            || (ex is RequestFailedException rfe && (rfe.Status == 429 || rfe.Status >= 500));
     }
 
     static void BuildOrRefreshAgent()

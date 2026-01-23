@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Azure;
 using Azure.AI.OpenAI;
 using Azure.Identity;
 using Microsoft.Agents.AI;
@@ -14,6 +15,14 @@ class Program
 {
     static async Task Main()
     {
+        using var cts = new System.Threading.CancellationTokenSource();
+        Console.CancelKeyPress += (_, e) =>
+        {
+            e.Cancel = true;
+            cts.Cancel();
+            Console.WriteLine("Cancellation requested. Finishing current step...");
+        };
+
     var configuration = BuildConfiguration();
         // === 1) Connect to Microsoft Learn MCP Server (HTTP/Streamable HTTP) ===
         var learnEndpoint = GetOptionalSetting(configuration, "LEARN_MCP_ENDPOINT", "LearnMcp:Endpoint")
@@ -30,14 +39,16 @@ class Program
         await using var mcp = await RunWithRetryAsync(
             () => McpClient.CreateAsync(httpTransport),
             operationName: "MCP connect",
-            maxAttempts: 3);
+            maxAttempts: 3,
+            cancellationToken: cts.Token);
         Console.WriteLine("Connected to Learn MCP.");
 
         // === 2) Discover MCP tools dynamically ===
         var mcpTools = (await RunWithRetryAsync(
             () => mcp.ListToolsAsync(),
             operationName: "MCP list tools",
-            maxAttempts: 3)).Cast<AITool>().ToList();
+            maxAttempts: 3,
+            cancellationToken: cts.Token)).Cast<AITool>().ToList();
         Console.WriteLine("Tools exposed by Learn MCP:");
         foreach (var t in mcpTools) Console.WriteLine($" - {t.Name}");
 
@@ -70,7 +81,8 @@ class Program
         var result = await RunWithRetryAsync(
             () => agent.RunAsync(demoQuestion),
             operationName: "Agent run",
-            maxAttempts: 3);
+            maxAttempts: 3,
+            cancellationToken: cts.Token);
         Console.WriteLine("\n=== Agent Response ===\n");
         Console.WriteLine(result.Text);
 
@@ -112,10 +124,12 @@ class Program
         Func<Task<T>> operation,
         string operationName,
         int maxAttempts = 3,
-        int baseDelayMs = 500)
+        int baseDelayMs = 500,
+        System.Threading.CancellationToken cancellationToken = default)
     {
         for (var attempt = 1; attempt <= maxAttempts; attempt++)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             try
             {
                 return await operation();
@@ -124,7 +138,7 @@ class Program
             {
                 var delay = TimeSpan.FromMilliseconds(baseDelayMs * Math.Pow(2, attempt - 1));
                 Console.WriteLine($"Transient error during {operationName}. Retrying in {delay.TotalMilliseconds}ms...");
-                await Task.Delay(delay);
+                await Task.Delay(delay, cancellationToken);
             }
         }
 
@@ -136,6 +150,7 @@ class Program
     {
         return ex is HttpRequestException
             || ex is TaskCanceledException
-            || ex is TimeoutException;
+            || ex is TimeoutException
+            || (ex is RequestFailedException rfe && (rfe.Status == 429 || rfe.Status >= 500));
     }
 }
