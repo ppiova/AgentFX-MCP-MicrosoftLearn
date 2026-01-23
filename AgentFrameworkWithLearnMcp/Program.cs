@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Azure.AI.OpenAI;
 using Azure.Identity;
 using Microsoft.Agents.AI;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.AI;
 using ModelContextProtocol.Client;
 
@@ -12,12 +14,17 @@ class Program
 {
     static async Task Main()
     {
+    var configuration = BuildConfiguration();
         // === 1) Connect to Microsoft Learn MCP Server (HTTP/Streamable HTTP) ===
-        var learnEndpoint = new Uri("https://learn.microsoft.com/api/mcp");
+        var learnEndpoint = GetOptionalSetting(configuration, "LEARN_MCP_ENDPOINT", "LearnMcp:Endpoint")
+            ?? "https://learn.microsoft.com/api/mcp";
+        if (!Uri.TryCreate(learnEndpoint, UriKind.Absolute, out var learnEndpointUri))
+            throw new InvalidOperationException("Invalid LEARN_MCP_ENDPOINT. Provide a valid absolute URL.");
+
         var httpTransport = new HttpClientTransport(new HttpClientTransportOptions
         {
             Name = "MicrosoftLearn",
-            Endpoint = learnEndpoint
+            Endpoint = learnEndpointUri
         });
 
         await using var mcp = await McpClient.CreateAsync(httpTransport);
@@ -30,10 +37,8 @@ class Program
 
         // === 3) Create the Microsoft Agent Framework agent ===
         // (we use Azure OpenAI as the chat backend; you can change it to another IChatClient)
-        var endpoint   = Environment.GetEnvironmentVariable("AZURE_OPENAI_ENDPOINT")
-                         ?? throw new InvalidOperationException("Missing AZURE_OPENAI_ENDPOINT");
-        var deployment = Environment.GetEnvironmentVariable("AZURE_OPENAI_DEPLOYMENT_NAME")
-                         ?? throw new InvalidOperationException("Missing AZURE_OPENAI_DEPLOYMENT_NAME");
+        var endpoint   = GetRequiredSetting(configuration, "AZURE_OPENAI_ENDPOINT", "AzureOpenAI:Endpoint");
+        var deployment = GetRequiredSetting(configuration, "AZURE_OPENAI_DEPLOYMENT_NAME", "AzureOpenAI:DeploymentName");
 
         IChatClient chatClient = new AzureOpenAIClient(new Uri(endpoint), new AzureCliCredential())
             .GetChatClient(deployment)
@@ -62,5 +67,35 @@ class Program
 
         // Tip: if you want to see Traces/Observability, check the Agent Framework repo. 
         // (includes examples and guides for logging/telemetry and latest releases). 
+    }
+
+    static IConfiguration BuildConfiguration()
+    {
+        return new ConfigurationBuilder()
+            .SetBasePath(Directory.GetCurrentDirectory())
+            .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+            .AddEnvironmentVariables()
+            .Build();
+    }
+
+    static string? GetOptionalSetting(IConfiguration config, params string[] keys)
+    {
+        foreach (var key in keys)
+        {
+            var value = config[key]?.Trim();
+            if (!string.IsNullOrWhiteSpace(value))
+                return value;
+        }
+        return null;
+    }
+
+    static string GetRequiredSetting(IConfiguration config, params string[] keys)
+    {
+        var value = GetOptionalSetting(config, keys);
+        if (!string.IsNullOrWhiteSpace(value))
+            return value;
+
+        throw new InvalidOperationException(
+            $"Missing required setting. Set one of: {string.Join(", ", keys)}");
     }
 }

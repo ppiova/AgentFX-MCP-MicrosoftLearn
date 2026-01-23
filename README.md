@@ -52,15 +52,34 @@ Edit `launchSettings.json` in each project's `Properties` folder:
 }
 ```
 
+Or update `appsettings.json` in each project:
+
+```json
+{
+  "AzureOpenAI": {
+    "Endpoint": "https://your-resource.openai.azure.com/",
+    "DeploymentName": "gpt-5-mini"
+  },
+  "LearnMcp": {
+    "Endpoint": "https://learn.microsoft.com/api/mcp"
+  },
+  "Memory": {
+    "File": "memory.json"
+  }
+}
+```
+
 3. **Run the project:**
 
-```bash
-# Simple demo
 ### Option 2: Environment variables in PowerShell
 
 ```powershell
 $env:AZURE_OPENAI_ENDPOINT = "https://your-resource.openai.azure.com/"
 $env:AZURE_OPENAI_DEPLOYMENT_NAME = "gpt-5-mini"
+# Optional: override MCP endpoint
+$env:LEARN_MCP_ENDPOINT = "https://learn.microsoft.com/api/mcp"
+# Optional: memory store file
+$env:MEMORY_FILE = "memory.json"
 ```
 
 ### Option 3: Permanent environment variables
@@ -68,6 +87,8 @@ $env:AZURE_OPENAI_DEPLOYMENT_NAME = "gpt-5-mini"
 ```powershell
 [System.Environment]::SetEnvironmentVariable('AZURE_OPENAI_ENDPOINT', 'https://your-resource.openai.azure.com/', 'User')
 [System.Environment]::SetEnvironmentVariable('AZURE_OPENAI_DEPLOYMENT_NAME', 'gpt-5-mini', 'User')
+[System.Environment]::SetEnvironmentVariable('LEARN_MCP_ENDPOINT', 'https://learn.microsoft.com/api/mcp', 'User')
+[System.Environment]::SetEnvironmentVariable('MEMORY_FILE', 'memory.json', 'User')
 ```
 
 ## 🏃 Run
@@ -81,6 +102,10 @@ cd AgentFrameworkCopilot
 dotnet run
 ```
 
+Saved conversations are written to the logs/ folder.
+
+The memory store is persisted to MEMORY_FILE (default: memory.json).
+
 ## 💬 Interactive Commands
 
 Once running `AgentFrameworkCopilot`:
@@ -92,6 +117,8 @@ Once running `AgentFrameworkCopilot`:
 | `/history` | View conversation history |
 | `/memory` | Show all stored memories |
 | `/profile` | Display user profile information |
+| `/set k v` | Set memory key to value |
+| `/forget k` | Remove memory by key |
 | `/save` | Save conversation to file |
 | `/exit` | Quit application |
 
