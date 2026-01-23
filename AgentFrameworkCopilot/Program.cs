@@ -187,6 +187,7 @@ class Program
 
         // === 2) Discover MCP tools dynamically ===
         PrintInfo("🔧 Loading available tools...");
+        PrintInfo("🛠️  Discovering tools from MCP...");
         var mcpTools = (await RunWithRetryAsync(
             () => mcp.ListToolsAsync(),
             operationName: "MCP list tools",
@@ -194,6 +195,7 @@ class Program
             baseDelayMs: retryBaseDelayMs,
             cancellationToken: cancellationTokenSource.Token,
             emitConsoleTiming: true)).Cast<AITool>().ToList();
+        PrintSuccess("🛠️  Tool discovery completed");
         PrintSuccess($"✓ Loaded {mcpTools.Count} tools from Microsoft Learn");
         
         if (mcpTools.Any())
@@ -286,6 +288,9 @@ class Program
             {
                 // Run the agent with the AgentThread to maintain conversation context
                 // The thread automatically tracks all messages and maintains state
+                Console.ForegroundColor = ConsoleColor.DarkGray;
+                Console.WriteLine($"🔧 Tools enabled: {availableTools?.Count ?? 0}");
+                Console.ResetColor();
                 var result = await RunWithRetryAsync(
                     () => agent!.RunAsync(userInput, thread!),
                     operationName: "Agent run",
